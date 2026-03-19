@@ -1,0 +1,452 @@
+:root {
+  --timeline-width: 220px;
+  --active-glow: #00ffcc;
+  --timeline-top-offset: 100px;
+  --popout-distance: 60px;
+}
+
+#iron-combat-timeline {
+  position: absolute;
+  left: 95px;
+  top: var(--timeline-top-offset);
+  width: var(--timeline-width);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  z-index: 50;
+  transition: transform 0.3s ease;
+}
+
+/* ============================================
+   ラウンドカウンター
+   ============================================ */
+.ag-round-counter {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 6px; padding: 5px 14px;
+  background: linear-gradient(90deg, rgba(0, 5, 20, 0.92), rgba(0, 20, 50, 0.85));
+  border-radius: 6px; border-left: 3px solid #ffaa00;
+  transform: skewX(-15deg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 170, 0, 0.1);
+}
+.ag-round-label {
+  transform: skewX(15deg); font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.65rem; font-weight: bold; color: #888;
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+.ag-round-number {
+  transform: skewX(15deg); font-family: 'Share Tech Mono', sans-serif;
+  font-size: 1.3rem; font-weight: bold; color: #ffaa00;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.5); line-height: 1;
+}
+
+/* ============================================
+   ユニット
+   ============================================ */
+.ag-unit {
+  width: var(--timeline-width);
+  display: flex; flex-direction: column; align-items: flex-start;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s, filter 0.3s;
+  pointer-events: auto;
+  filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.4));
+  cursor: pointer; position: relative;
+}
+
+/* GM非表示 */
+.ag-unit.ag-hidden-token { opacity: 0.45; }
+.ag-unit.ag-hidden-token::after {
+  content: "\f070"; font-family: "Font Awesome 5 Free"; font-weight: 900;
+  position: absolute; top: 4px; left: 4px;
+  font-size: 10px; color: rgba(255, 255, 255, 0.5); z-index: 20;
+}
+
+/* 待機状態 */
+.ag-unit.ag-delayed .ag-portrait-box {
+  border-color: #886600;
+  border-style: dashed;
+}
+.ag-unit.ag-delayed .ag-name-text::after {
+  content: " [待機]";
+  font-size: 0.65rem;
+  color: #aa8800;
+}
+
+/* ドラッグハンドル */
+.ag-drag-handle {
+  position: absolute; top: 50%; left: -18px; transform: translateY(-50%);
+  width: 16px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  color: #555; font-size: 10px; cursor: grab; z-index: 10;
+  opacity: 0; transition: opacity 0.2s, color 0.2s; pointer-events: auto;
+}
+.ag-unit:hover .ag-drag-handle { opacity: 1; }
+.ag-drag-handle:hover { color: #ffaa00; }
+.ag-drag-handle:active { cursor: grabbing; }
+
+.ag-unit.ag-drag-hidden {
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+.ag-drag-ghost {
+  opacity: 0.88;
+  filter: drop-shadow(4px 8px 16px rgba(255, 170, 0, 0.35)) brightness(1.05);
+  transform: scale(1.03);
+}
+.ag-drag-placeholder {
+  border: 2px dashed rgba(255, 170, 0, 0.4);
+  border-radius: 8px; background: rgba(255, 170, 0, 0.05);
+  margin: 2px 0; transition: all 0.2s ease;
+}
+
+/* 歯車ボタン */
+.ag-gear-btn {
+  position: absolute; top: 2px; right: 8px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px; color: #999; font-size: 11px;
+  cursor: pointer; z-index: 10; opacity: 0;
+  transition: opacity 0.2s, color 0.2s, background 0.2s; pointer-events: auto;
+}
+.ag-unit:hover .ag-gear-btn { opacity: 1; }
+.ag-gear-btn:hover { color: #ffaa00; background: rgba(0, 0, 0, 0.85); border-color: #ffaa00; }
+.ag-gear-btn i { transition: transform 0.3s; }
+.ag-gear-btn:hover i { transform: rotate(90deg); }
+
+/* ポートレートボックス */
+.ag-portrait-box {
+  width: 200px; height: 70px; margin-left: -10px;
+  background: linear-gradient(135deg, rgba(20, 25, 30, 0.95) 0%, rgba(0, 20, 50, 0.9) 100%);
+  border-radius: 8px; border: 2px solid #555;
+  transform: skewX(-15deg); overflow: hidden;
+  position: relative; z-index: 1; transition: all 0.3s ease;
+}
+.ag-image {
+  width: 140%; height: 100%; margin-left: -20%;
+  background-size: 150%; background-position: 50% 20%;
+  transform: skewX(15deg); background-color: transparent;
+}
+.ag-image.ag-portrait-silhouette { filter: brightness(0) saturate(0); }
+.ag-image.ag-portrait-hidden { filter: brightness(0.3) saturate(0); opacity: 0.5; }
+
+/* 名前ボックス */
+.ag-name-box {
+  align-self: flex-start; margin-top: -12px; margin-left: 30px;
+  background: linear-gradient(90deg, rgba(0, 5, 20, 0.95), rgba(0, 20, 50, 0.9));
+  padding: 4px 20px; border-radius: 4px; border-left: 3px solid #777;
+  transform: skewX(-15deg); z-index: 2;
+  transition: all 0.3s ease; white-space: nowrap;
+}
+.ag-name-text {
+  display: block; transform: skewX(15deg); color: #ddd;
+  font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.9rem; font-weight: bold; transition: all 0.3s ease;
+}
+
+/* ============================================
+   HPバー
+   ============================================ */
+.ag-hp-bar-wrap {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 8px; background: rgba(0, 0, 0, 0.65); z-index: 3; overflow: hidden;
+}
+.ag-hp-bar-wrap.ag-hp-hint-only { height: 6px; }
+.ag-hp-bar-fill {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  background: #22cc66; transition: width 0.4s ease, background 0.4s ease; z-index: 1;
+}
+.ag-hp-temp { position: absolute; top: 0; left: 0; bottom: 0; background: rgba(100, 180, 255, 0.45); z-index: 2; }
+.ag-hp-text {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  transform: skewX(15deg); font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.5rem; font-weight: bold; color: #fff;
+  text-shadow: 0 0 3px #000, 0 0 3px #000; z-index: 4;
+  opacity: 0; transition: opacity 0.2s;
+}
+.ag-unit:hover .ag-hp-text { opacity: 1; }
+
+/* ============================================
+   状態異常アイコン
+   ============================================ */
+.ag-status-row {
+  position: absolute; top: 2px; left: 10px;
+  display: flex; gap: 2px; z-index: 5; transform: skewX(15deg);
+}
+.ag-status-icon {
+  width: 16px; height: 16px; border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.5); object-fit: contain;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+}
+
+/* ============================================
+   集中維持マーカー
+   ============================================ */
+.ag-concentration {
+  position: absolute;
+  bottom: 10px; right: 6px;
+  display: flex; align-items: center; gap: 3px;
+  transform: skewX(15deg);
+  background: rgba(100, 50, 200, 0.7);
+  border: 1px solid rgba(180, 130, 255, 0.5);
+  border-radius: 4px;
+  padding: 1px 5px 1px 2px;
+  z-index: 6;
+  animation: ag-conc-pulse 2s infinite;
+}
+
+@keyframes ag-conc-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(150, 100, 255, 0.4); }
+  50% { box-shadow: 0 0 10px rgba(150, 100, 255, 0.7); }
+}
+
+.ag-conc-icon {
+  width: 14px; height: 14px;
+  border-radius: 2px; object-fit: contain;
+}
+.ag-conc-text {
+  font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.5rem; color: #ddc8ff;
+  white-space: nowrap; max-width: 60px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ============================================
+   ACTIVE演出
+   ============================================ */
+.ag-unit.active {
+  transform: translateX(var(--popout-distance)) scale(1.02);
+  z-index: 100 !important;
+}
+.ag-unit.active .ag-portrait-box {
+  border-color: #ffaa00;
+  background: linear-gradient(135deg, rgba(80, 50, 0, 0.95) 0%, rgba(30, 20, 0, 0.98) 100%);
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+}
+.ag-unit.active .ag-name-box {
+  border-left: 6px solid #ffaa00; background: #111;
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.4);
+}
+.ag-unit.active .ag-name-text { color: #ffaa00; text-shadow: 0 0 8px #ffaa00; }
+
+/* ============================================
+   コントロールボタン
+   ============================================ */
+.ag-controls {
+  width: var(--timeline-width); display: flex;
+  justify-content: space-between; gap: 5px;
+  margin-top: 10px; pointer-events: auto;
+}
+.ag-btn {
+  flex: 1; background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff; padding: 6px 0; cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform: skewX(-15deg);
+  display: flex; align-items: center; justify-content: center;
+}
+.ag-btn i { transform: skewX(15deg); }
+.ag-btn.ag-btn-main { flex: 1.5; background: rgba(255, 255, 255, 0.1); }
+.ag-btn:hover { background: #ffaa00; color: #000; border-color: #ffaa00; box-shadow: 0 0 10px #ffaa00; }
+
+/* ============================================
+   コンパクトスタイル
+   ============================================ */
+#iron-combat-timeline.ag-style-compact { gap: 6px; }
+#iron-combat-timeline.ag-style-compact .ag-portrait-box { width: 170px; height: 52px; }
+#iron-combat-timeline.ag-style-compact .ag-name-box { margin-top: -10px; margin-left: 24px; padding: 3px 14px; }
+#iron-combat-timeline.ag-style-compact .ag-name-text { font-size: 0.78rem; }
+#iron-combat-timeline.ag-style-compact .ag-unit.completed {
+  opacity: 0.6;
+  filter: brightness(0.6) saturate(0.4) drop-shadow(1px 2px 3px rgba(0,0,0,0.3));
+  transform: scale(0.92); transform-origin: left center;
+}
+#iron-combat-timeline.ag-style-compact .ag-unit.completed .ag-name-box { display: none; }
+#iron-combat-timeline.ag-style-compact .ag-unit.completed .ag-portrait-box { height: 36px; width: 150px; }
+
+/* ============================================
+   カード重ね落ちスタイル
+   ============================================ */
+#iron-combat-timeline.ag-style-stack { gap: 0; }
+#iron-combat-timeline.ag-style-stack .ag-unit {
+  margin-top: -45px;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
+}
+#iron-combat-timeline.ag-style-stack .ag-unit:first-child,
+#iron-combat-timeline.ag-style-stack .ag-round-counter + .ag-unit { margin-top: 0; }
+#iron-combat-timeline.ag-style-stack .ag-unit.active { transform: translateX(30px) scale(1.02); }
+#iron-combat-timeline.ag-style-stack .ag-unit.completed {
+  transform: translateY(5px) scale(0.95); opacity: 1;
+  filter: brightness(0.5) saturate(0.5); pointer-events: none;
+}
+#iron-combat-timeline.ag-style-stack .ag-controls { margin-top: 80px; }
+
+/* ============================================
+   手番通知フラッシュ
+   ============================================ */
+#ag-turn-flash {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  animation: ag-flash-anim 2.2s ease-out forwards;
+}
+
+@keyframes ag-flash-anim {
+  0% { background: rgba(255, 170, 0, 0.35); }
+  15% { background: rgba(255, 170, 0, 0.08); }
+  80% { background: transparent; opacity: 1; }
+  100% { background: transparent; opacity: 0; }
+}
+
+.ag-flash-content {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  animation: ag-flash-text 2.2s ease-out forwards;
+}
+
+@keyframes ag-flash-text {
+  0% { transform: scale(1.2); opacity: 0; }
+  10% { transform: scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.ag-flash-content i {
+  font-size: 2rem; color: #ffaa00;
+  text-shadow: 0 0 30px rgba(255, 170, 0, 0.8);
+}
+.ag-flash-text {
+  font-family: 'Share Tech Mono', sans-serif;
+  font-size: 2.5rem; font-weight: bold;
+  color: #ffaa00; letter-spacing: 0.3em;
+  text-shadow: 0 0 20px rgba(255, 170, 0, 0.6), 0 2px 8px rgba(0,0,0,0.5);
+}
+.ag-flash-name {
+  font-family: 'Share Tech Mono', sans-serif;
+  font-size: 1.1rem; color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   右クリックメニュー
+   ============================================ */
+#ag-context-menu {
+  position: fixed; z-index: 10001; min-width: 210px;
+  background: linear-gradient(180deg, #1e2128 0%, #15181e 100%);
+  border: 1px solid rgba(255, 170, 0, 0.25); border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 170, 0, 0.08);
+  overflow: hidden; font-family: 'Share Tech Mono', sans-serif; color: #ddd;
+  animation: ag-ctx-appear 0.12s ease-out;
+}
+@keyframes ag-ctx-appear {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.ag-ctx-header {
+  padding: 8px 14px; font-size: 0.78rem; font-weight: bold; color: #ffaa00;
+  background: rgba(255, 170, 0, 0.06);
+  border-bottom: 1px solid rgba(255, 170, 0, 0.15);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ag-ctx-item {
+  padding: 7px 14px; font-size: 0.78rem; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background 0.15s, color 0.15s; white-space: nowrap;
+}
+.ag-ctx-item i { width: 16px; text-align: center; font-size: 0.72rem; color: #888; transition: color 0.15s; }
+.ag-ctx-item:hover { background: rgba(255, 170, 0, 0.12); color: #fff; }
+.ag-ctx-item:hover i { color: #ffaa00; }
+.ag-ctx-value { margin-left: auto; font-size: 0.7rem; color: #666; }
+.ag-ctx-danger { color: #cc5555; }
+.ag-ctx-danger i { color: #cc5555; }
+.ag-ctx-danger:hover { background: rgba(200, 50, 50, 0.15); color: #ff6666; }
+.ag-ctx-danger:hover i { color: #ff6666; }
+.ag-ctx-divider { height: 1px; background: rgba(255, 255, 255, 0.06); margin: 2px 0; }
+
+/* ============================================
+   画像エディタ
+   ============================================ */
+#ag-image-editor {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  z-index: 10000; width: 360px;
+  background: linear-gradient(180deg, #1a1d24 0%, #12151a 100%);
+  border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 170, 0, 0.1);
+  color: #ddd; font-family: 'Share Tech Mono', sans-serif; overflow: hidden;
+}
+.ag-editor-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: rgba(255, 170, 0, 0.08);
+  border-bottom: 1px solid rgba(255, 170, 0, 0.2);
+  cursor: move; user-select: none;
+}
+.ag-editor-title { font-size: 0.85rem; font-weight: bold; color: #ffaa00; }
+.ag-editor-title i { margin-right: 6px; }
+.ag-editor-close {
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: #888; border-radius: 4px; transition: all 0.2s;
+}
+.ag-editor-close:hover { color: #ff4444; background: rgba(255, 0, 0, 0.1); }
+.ag-editor-preview-wrap { padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ag-editor-preview-clip {
+  width: 280px; height: 100px; border-radius: 8px; border: 2px solid #555;
+  transform: skewX(-15deg); overflow: hidden; background: rgba(0, 0, 0, 0.5);
+}
+.ag-editor-preview-img {
+  width: 140%; height: 100%; margin-left: -20%;
+  background-size: 150%; background-position: 50% 20%;
+  transform: skewX(15deg); background-repeat: no-repeat;
+}
+.ag-editor-hint { font-size: 0.7rem; color: #666; text-align: center; }
+.ag-editor-controls { padding: 10px 14px 14px; }
+.ag-editor-section-label {
+  font-size: 0.72rem; color: #999; margin-bottom: 8px; padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ag-editor-section-label i { margin-right: 5px; color: #666; }
+.ag-editor-divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 12px 0; }
+.ag-editor-portrait-row { display: flex; gap: 4px; margin-bottom: 6px; }
+.ag-editor-path-input {
+  flex: 1; background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px;
+  color: #ccc; font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.72rem; padding: 5px 8px; outline: none; transition: border-color 0.2s;
+}
+.ag-editor-path-input:focus { border-color: rgba(255, 170, 0, 0.5); }
+.ag-editor-path-input::placeholder { color: #555; }
+.ag-editor-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ag-editor-row label { font-size: 0.75rem; color: #999; min-width: 65px; white-space: nowrap; }
+.ag-editor-row label i { margin-right: 4px; color: #666; width: 14px; text-align: center; }
+.ag-editor-row input[type="range"] {
+  flex: 1; height: 4px; -webkit-appearance: none; appearance: none;
+  background: #333; border-radius: 2px; outline: none;
+}
+.ag-editor-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: #ffaa00; cursor: pointer; border: 2px solid #1a1d24;
+  box-shadow: 0 0 6px rgba(255, 170, 0, 0.4);
+}
+.ag-editor-row input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #ffaa00; cursor: pointer; border: 2px solid #1a1d24;
+}
+.ag-edit-val { font-size: 0.7rem; color: #ffaa00; min-width: 35px; text-align: right; }
+.ag-editor-buttons { display: flex; gap: 8px; margin-top: 10px; }
+.ag-editor-btn {
+  padding: 7px 10px; border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 5px; background: rgba(255, 255, 255, 0.05);
+  color: #ccc; font-family: 'Share Tech Mono', sans-serif;
+  font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.ag-editor-buttons .ag-editor-btn { flex: 1; }
+.ag-editor-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); }
+.ag-editor-btn.ag-editor-save { background: rgba(255, 170, 0, 0.15); border-color: rgba(255, 170, 0, 0.4); color: #ffaa00; }
+.ag-editor-btn.ag-editor-save:hover { background: rgba(255, 170, 0, 0.3); box-shadow: 0 0 10px rgba(255, 170, 0, 0.2); }
+.ag-editor-btn.ag-editor-reset:hover { color: #ff6666; border-color: rgba(255, 100, 100, 0.3); }
+.ag-editor-portrait-row .ag-editor-btn { padding: 5px 8px; font-size: 0.75rem; min-width: unset; }
+.ag-editor-clear-portrait:hover { color: #ff6666; border-color: rgba(255, 100, 100, 0.3); }

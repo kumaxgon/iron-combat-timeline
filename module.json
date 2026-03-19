@@ -1,0 +1,24 @@
+{
+  "id": "iron-combat-timeline",
+  "title": "Iron Combat Timeline",
+  "description": "スタイリッシュな縦型タイムラインを画面左端に表示する戦闘トラッカー拡張モジュール。手番管理・HP表示・画像調整・プレイヤー表示制限など多機能。",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "鉄の翁"
+    }
+  ],
+  "scripts": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/timeline.css"
+  ],
+  "url": "",
+  "manifest": "",
+  "download": ""
+}
