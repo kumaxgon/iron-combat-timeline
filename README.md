@@ -48,7 +48,7 @@ Foundry VTT用のスタイリッシュな縦型戦闘タイムラインモジュ
 Foundry VTTの「モジュールをインストール」画面で以下のURLを入力:
 
 ```
-https://github.com/kumaxgon/iron-combat-timeline/releases/latest/download/module.json
+設定しておりません
 ```
 
 ### 手動インストール
